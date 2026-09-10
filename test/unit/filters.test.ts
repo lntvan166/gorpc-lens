@@ -1,5 +1,10 @@
 import * as assert from 'assert';
-import { excludeSelf, filterByPath, filterByReceiver } from '../../src/core/filters';
+import {
+  excludeSelf,
+  filterByPath,
+  filterByReceiver,
+  keepNonGenerated,
+} from '../../src/core/filters';
 
 const OPTS = { excludeGlobs: ['**/*.pb.go'], includeTests: false };
 
@@ -71,5 +76,32 @@ describe('excludeSelf', () => {
       excludeSelf([{ path: '/r/a.go', line: 9 }], { path: '/r/a.go', line: 47 }).length,
       1,
     );
+  });
+});
+
+describe('keepNonGenerated', () => {
+  const OPT = { excludeGlobs: ['**/*.pb.go'], includeTests: false };
+  const HANDLER = { path: '/r/svc/handler.go', line: 47, character: 30 };
+  const GEN = { path: '/r/pb/x_grpc.pb.go', line: 79, character: 1 };
+  const OTHER = { path: '/r/biz/other.go', line: 3, character: 0 };
+
+  it('drops generated results when there is somewhere else to go', () => {
+    assert.deepStrictEqual(keepNonGenerated([GEN, HANDLER], OPT, true), [HANDLER]);
+  });
+
+  it('keeps every non-generated result, not just the first', () => {
+    assert.deepStrictEqual(keepNonGenerated([GEN, HANDLER, OTHER], OPT, true), [HANDLER, OTHER]);
+  });
+
+  it('falls back to the generated results rather than leaving nowhere to go', () => {
+    assert.deepStrictEqual(keepNonGenerated([GEN], OPT, true), [GEN]);
+  });
+
+  it('passes everything through when the option is off', () => {
+    assert.deepStrictEqual(keepNonGenerated([GEN, HANDLER], OPT, false), [GEN, HANDLER]);
+  });
+
+  it('returns an empty list unchanged', () => {
+    assert.deepStrictEqual(keepNonGenerated([], OPT, true), []);
   });
 });

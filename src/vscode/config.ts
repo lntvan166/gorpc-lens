@@ -6,6 +6,7 @@ export interface GorpcConfig {
   timeoutMs: number;
   includeTests: boolean;
   codeLensHandlers: boolean;
+  ignoreGeneratedFiles: boolean;
   excludeGlobs: string[];
   trace: TraceLevel;
 }
@@ -17,6 +18,7 @@ export function readConfig(): GorpcConfig {
     timeoutMs: c.get<number>('timeoutMs', 2000),
     includeTests: c.get<boolean>('includeTests', false),
     codeLensHandlers: c.get<boolean>('codeLens.handlers', false),
+    ignoreGeneratedFiles: c.get<boolean>('ignoreGeneratedFiles', true),
     excludeGlobs: c.get<string[]>('excludeGlobs', ['**/*.pb.go']),
     trace: c.get<TraceLevel>('trace', 'off'),
   };

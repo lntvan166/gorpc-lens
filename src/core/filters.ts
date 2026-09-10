@@ -26,3 +26,24 @@ export function excludeSelf<T extends { path: string; line: number }>(
 ): T[] {
   return results.filter((r) => !(r.path === current.path && r.line === current.line));
 }
+
+/**
+ * Drop generated results from a go-to-definition list.
+ *
+ * Unlike picking the first result, this removes the generated entries outright,
+ * so a list of three real targets stays a list of three. The fallback matters:
+ * a symbol that only exists in generated code — a request message type, say —
+ * would otherwise navigate nowhere at all, which is worse than landing in the
+ * generated file.
+ */
+export function keepNonGenerated<T extends { path: string }>(
+  results: T[],
+  opts: FilterOptions,
+  active: boolean,
+): T[] {
+  if (!active || results.length === 0) {
+    return results;
+  }
+  const kept = results.filter((r) => !opts.excludeGlobs.some((g) => matchGlob(r.path, g)));
+  return kept.length > 0 ? kept : results;
+}

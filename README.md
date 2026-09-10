@@ -34,12 +34,58 @@ paths, not where handlers live. That is why it works on any Go gRPC project.
 | Action | Where | Result |
 |---|---|---|
 | Ctrl+Click | a gRPC client call | the generated interface **and** the handler |
+| `Ctrl+Alt+G` | any Go symbol | definitions with generated `.pb.go` entries removed |
 | `Ctrl+Alt+H` | a call site or handler | jump straight to the handler |
 | Shift+F12 | a handler method | in-module references **and** cross-service callers |
 | **Find gRPC Callers** | either end | every service that calls this RPC |
 | **Go to Proto Definition** | either end | the `rpc` line in the `.proto` |
+| Ctrl+Click | an `rpc` line in a `.proto` | the Go handler that serves it |
 
 All commands are on the right-click **gRPC** submenu in Go files.
+
+Proto navigation works in both directions: from a handler to its `rpc` line, and
+from an `rpc` line back to the handler. The `.proto` side needs no proto
+extension installed — files are matched by glob, not language id.
+
+## Skipping generated files
+
+Ctrl+Click on a gRPC call shows two entries: the handler gorpc-lens found, and
+the generated `.pb.go` interface gopls found.
+
+**gorpc-lens: Go to Definition (skip generated files)** — bound to `Ctrl+Alt+G`
+(`Cmd+Alt+G` on macOS) — shows the same list with the generated entries removed.
+Not "jump to the first result": they are gone from the list, however many real
+targets remain.
+
+### Putting it on F12
+
+The command is also bound to `F12`, but whether that wins over the built-in
+Go to Definition depends on extension load order, so treat it as a bonus. To make
+`F12` yours deterministically, add this to your **keybindings.json**
+(`Ctrl+K Ctrl+S`, then the "Open Keyboard Shortcuts (JSON)" icon) — user
+keybindings always beat both defaults and extensions:
+
+```json
+{ "key": "f12", "command": "-editor.action.revealDefinition", "when": "editorLangId == go" },
+{ "key": "f12", "command": "gorpcLens.goToDefinition", "when": "editorTextFocus && editorLangId == go" }
+```
+
+The first line removes the built-in binding for Go files only; the second puts
+ours in its place. Delete both lines to go back.
+
+Controlled by `gorpcLens.ignoreGeneratedFiles` (on by default), which uses
+`gorpcLens.excludeGlobs` to decide what counts as generated. If *every* result is
+generated — a request message type, say — they are shown anyway, so navigation
+never dead-ends.
+
+Set `gorpcLens.ignoreGeneratedFiles` to `false` to make the command behave like
+stock Go to Definition.
+
+**Ctrl+Click itself cannot be filtered.** VS Code merges the results of every
+definition provider and gives extensions no way to remove another provider's
+entries, and the click gesture has no interception point. Any extension claiming
+otherwise is picking the first result, which breaks as soon as the list has more
+than two.
 
 ## Requirements
 
@@ -52,6 +98,7 @@ normal way to get that.
 | Setting | Default | Meaning |
 |---|---|---|
 | `gorpcLens.enabled` | `true` | Master switch. |
+| `gorpcLens.ignoreGeneratedFiles` | `true` | Drop generated files from **Go to Definition (skip generated files)**. |
 | `gorpcLens.timeoutMs` | `2000` | Give up on a gopls query and contribute nothing. |
 | `gorpcLens.includeTests` | `false` | Include results in `_test.go`. |
 | `gorpcLens.codeLens.handlers` | `false` | Caller-count lens above handler methods. |

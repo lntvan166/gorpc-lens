@@ -1,11 +1,14 @@
 import * as vscode from 'vscode';
 import { COMMAND_STAGES } from '../core/pipeline';
-import { excludeSelf } from '../core/filters';
+import { excludeSelf, keepNonGenerated } from '../core/filters';
 import { Loc } from '../core/types';
 import { findRpcLine, pickNearestProto } from '../core/proto';
 import { Deps, toVsLocation } from './definition';
 
 export function registerCommands(context: vscode.ExtensionContext, deps: Deps): void {
+  context.subscriptions.push(
+    vscode.commands.registerCommand('gorpcLens.goToDefinition', () => goToDefinition(deps)),
+  );
   context.subscriptions.push(
     vscode.commands.registerCommand('gorpcLens.goToHandler', () => goToHandler(deps)),
   );
@@ -158,4 +161,43 @@ export async function goToProto(deps: Deps): Promise<void> {
       `gorpc-lens: opened ${source} but could not find "rpc ${resolved.site.method}".`,
     );
   }
+}
+
+/**
+ * Go to Definition with generated files removed from the list.
+ *
+ * Ctrl+Click cannot be filtered - VS Code merges every provider's results and
+ * offers no interception point - so this is a command you bind a key to. It
+ * asks for the same merged list Ctrl+Click would show, then drops the generated
+ * entries, keeping however many real targets remain.
+ */
+export async function goToDefinition(deps: Deps): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    return;
+  }
+
+  const pos = editor.selection.active;
+  const cfg = deps.config();
+
+  // Deliberately unguarded: this must re-enter our own definition provider,
+  // which is what contributes the handler in the first place.
+  const all = await deps.lsp.definitions(editor.document.uri.fsPath, {
+    line: pos.line,
+    character: pos.character,
+  });
+
+  if (all.length === 0) {
+    vscode.window.showWarningMessage('gorpc-lens: no definition found here.');
+    return;
+  }
+
+  const kept = keepNonGenerated(
+    all,
+    { excludeGlobs: cfg.excludeGlobs, includeTests: cfg.includeTests },
+    cfg.ignoreGeneratedFiles,
+  );
+  deps.log.trace('goToDefinition', `${all.length} results, ${kept.length} after filtering`);
+
+  await revealOrPeek(editor.document.uri, pos, kept);
 }

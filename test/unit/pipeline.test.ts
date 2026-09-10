@@ -135,3 +135,24 @@ describe('REFERENCE_STAGES', () => {
     assert.strictEqual(lsp.definitionCalls, 0);
   });
 });
+
+describe('Pipeline.siteForMethod', () => {
+  it('finds a method by name without any cursor position', async () => {
+    const p = new Pipeline(new FakeLsp(), SILENT);
+    const r = await p.siteForMethod(PB_PATH, 'Echo');
+    assert.strictEqual(r?.site.service, 'EchoService');
+    assert.strictEqual(r?.site.serverMethod?.line, SERVER_LINE);
+    assert.strictEqual(r?.site.clientMethod?.line, CLIENT_LINE);
+    assert.strictEqual(r?.site.protoSource, 'pb/echo.proto');
+  });
+
+  it('returns undefined for a method the service does not have', async () => {
+    const p = new Pipeline(new FakeLsp(), SILENT);
+    assert.strictEqual(await p.siteForMethod(PB_PATH, 'Nope'), undefined);
+  });
+
+  it('returns undefined when the file cannot be read', async () => {
+    const p = new Pipeline(new FakeLsp(), SILENT);
+    assert.strictEqual(await p.siteForMethod('/r/pb/missing_grpc.pb.go', 'Echo'), undefined);
+  });
+});

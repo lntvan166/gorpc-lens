@@ -8,8 +8,13 @@ import { Deps, GrpcDefinitionProvider } from './vscode/definition';
 import { registerCommands } from './vscode/commands';
 import { GrpcReferenceProvider } from './vscode/reference';
 import { GrpcCodeLensProvider } from './vscode/codelens';
+import { ProtoDefinitionProvider } from './vscode/protoDefinition';
 
 const GO: vscode.DocumentSelector = { language: 'go', scheme: 'file' };
+
+// Matched by glob, not language id: .proto files are plain text unless the user
+// happens to have a protobuf extension installed.
+const PROTO: vscode.DocumentSelector = { pattern: '**/*.proto', scheme: 'file' };
 
 let logger: Logger | undefined;
 
@@ -33,7 +38,7 @@ export function activate(context: vscode.ExtensionContext): void {
     log,
   );
 
-  const deps: Deps = { pipeline, resolver, config: readConfig, log };
+  const deps: Deps = { lsp, pipeline, resolver, config: readConfig, log };
 
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(GO, new GrpcDefinitionProvider(deps)),
@@ -44,6 +49,9 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.languages.registerCodeLensProvider(GO, new GrpcCodeLensProvider(deps)),
   );
+  const protoProvider = new ProtoDefinitionProvider(deps);
+  context.subscriptions.push(vscode.languages.registerDefinitionProvider(PROTO, protoProvider));
+
 
   registerCommands(context, deps);
 
@@ -53,6 +61,7 @@ export function activate(context: vscode.ExtensionContext): void {
       if (doc.languageId === 'go') {
         pipeline.invalidate();
         resolver.clearCache();
+        protoProvider.invalidate();
         log.trace('cache', `invalidated after saving ${doc.uri.fsPath}`);
       }
     }),

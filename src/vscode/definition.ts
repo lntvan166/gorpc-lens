@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { PROVIDER_STAGES, Pipeline } from '../core/pipeline';
 import { Resolver } from '../core/resolver';
-import { Loc, Logger } from '../core/types';
+import { Loc, Logger, LspClient } from '../core/types';
 import { GorpcConfig } from './config';
 import { guardKey, withGuard } from './guard';
 
 export interface Deps {
+  lsp: LspClient;
   pipeline: Pipeline;
   resolver: Resolver;
   config: () => GorpcConfig;

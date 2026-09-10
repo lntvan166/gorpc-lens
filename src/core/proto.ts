@@ -40,3 +40,44 @@ export function pickNearestProto(candidates: string[], pbPath: string): string |
   }
   return best;
 }
+
+export interface RpcDecl {
+  name: string;
+  character: number;
+}
+
+const RPC_DECL = /^\s*rpc\s+([A-Za-z_]\w*)\s*\(/;
+
+/** The rpc declared on this line, if it declares one. */
+export function rpcDeclAt(line: string): RpcDecl | undefined {
+  const m = RPC_DECL.exec(line);
+  if (!m) {
+    return undefined;
+  }
+  return { name: m[1], character: line.indexOf(m[1], line.indexOf('rpc') + 3) };
+}
+
+/**
+ * The stub filename protoc-gen-go-grpc emits for a proto:
+ * `.../order_service.proto` -> `order_service_grpc.pb.go`.
+ */
+export function generatedFileNameFor(protoPath: string): string {
+  const base = protoPath.split(/[\\/]/).pop() ?? protoPath;
+  return `${base.replace(/\.proto$/, '')}_grpc.pb.go`;
+}
+
+/**
+ * Whether a generated file's `// source:` header names this proto.
+ *
+ * The header is a package-relative path, so compare it as a path suffix. One
+ * directory can hold several services whose stubs share a naming pattern, and a
+ * monorepo can hold copies of the same tree in a worktree, so filename alone is
+ * not enough.
+ */
+export function sourceMatches(protoSource: string | undefined, protoPath: string): boolean {
+  if (!protoSource) {
+    return false;
+  }
+  const norm = (p: string): string => p.replace(/\\/g, '/');
+  return norm(protoPath).endsWith(norm(protoSource));
+}

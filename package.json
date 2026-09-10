@@ -2,7 +2,7 @@
   "name": "gorpc-lens",
   "displayName": "gorpc-lens",
   "description": "Jump from a Go gRPC client call to the handler that actually runs.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "lntvan166",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -37,11 +37,17 @@
     "theme": "dark"
   },
   "activationEvents": [
-    "onLanguage:go"
+    "onLanguage:go",
+    "onLanguage:proto",
+    "workspaceContains:**/*.proto"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
+      {
+        "command": "gorpcLens.goToDefinition",
+        "title": "gorpc-lens: Go to Definition (skip generated files)"
+      },
       {
         "command": "gorpcLens.goToHandler",
         "title": "gorpc-lens: Go to gRPC Handler"
@@ -56,6 +62,17 @@
       }
     ],
     "keybindings": [
+      {
+        "command": "gorpcLens.goToDefinition",
+        "key": "ctrl+alt+g",
+        "mac": "cmd+alt+g",
+        "when": "editorTextFocus && editorLangId == go"
+      },
+      {
+        "command": "gorpcLens.goToDefinition",
+        "key": "f12",
+        "when": "editorTextFocus && editorLangId == go"
+      },
       {
         "command": "gorpcLens.goToHandler",
         "key": "ctrl+alt+h",
@@ -72,6 +89,10 @@
         }
       ],
       "gorpcLens.submenu": [
+        {
+          "command": "gorpcLens.goToDefinition",
+          "group": "1_nav@0"
+        },
         {
           "command": "gorpcLens.goToHandler",
           "group": "1_nav@1"
@@ -99,6 +120,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable gorpc-lens navigation."
+        },
+        "gorpcLens.ignoreGeneratedFiles": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Drop generated files (see `#gorpcLens.excludeGlobs#`) from the results of **gorpc-lens: Go to Definition**. If every result is generated, they are shown anyway rather than leaving you with nowhere to go. This cannot apply to Ctrl+Click, which no extension can filter."
         },
         "gorpcLens.timeoutMs": {
           "type": "number",

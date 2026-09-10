@@ -50,6 +50,44 @@ export class Pipeline {
     return undefined;
   }
 
+  /**
+   * Look up a service method by name in a known generated file, rather than by
+   * cursor position. This is the entry point for navigation that starts outside
+   * Go entirely - from a `.proto` rpc line, where there is no Go position for
+   * gopls to resolve.
+   */
+  async siteForMethod(pbPath: string, method: string): Promise<ResolvedSite | undefined> {
+    const model = await this.model(pbPath);
+    if (!model) {
+      return undefined;
+    }
+    for (const svc of model.services.values()) {
+      const serverMethod = svc.server?.methods.get(method);
+      const clientMethod = svc.client?.methods.get(method);
+      if (!serverMethod && !clientMethod) {
+        continue;
+      }
+      this.log.trace('pipeline', `proto hit ${svc.name}/${method}`);
+      return {
+        pbPath,
+        site: {
+          service: svc.name,
+          method,
+          role: 'server',
+          clientMethod,
+          serverMethod,
+          protoSource: model.protoSource,
+        },
+      };
+    }
+    return undefined;
+  }
+
+  /** The parsed model for a generated file, for callers that need its header. */
+  async modelFor(path: string): Promise<PbFileModel | undefined> {
+    return this.model(path);
+  }
+
   private async firstSiteIn(locs: Loc[], stage: Stage): Promise<ResolvedSite | undefined> {
     for (const loc of locs) {
       const hit = await this.siteIn(loc, stage);

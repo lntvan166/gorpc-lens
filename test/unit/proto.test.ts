@@ -1,5 +1,11 @@
 import * as assert from 'assert';
-import { findRpcLine, pickNearestProto } from '../../src/core/proto';
+import {
+  findRpcLine,
+  generatedFileNameFor,
+  pickNearestProto,
+  rpcDeclAt,
+  sourceMatches,
+} from '../../src/core/proto';
 
 const PROTO = [
   'syntax = "proto3";',
@@ -47,5 +53,62 @@ describe('pickNearestProto', () => {
 
   it('returns undefined when there are none', () => {
     assert.strictEqual(pickNearestProto([], PB), undefined);
+  });
+});
+
+describe('rpcDeclAt', () => {
+  it('reads the rpc name and its column', () => {
+    const line = '    rpc ListOrders (ListOrdersRequest) returns (ListOrdersResponse) {';
+    const d = rpcDeclAt(line)!;
+    assert.strictEqual(d.name, 'ListOrders');
+    assert.strictEqual(line.slice(d.character, d.character + d.name.length), 'ListOrders');
+  });
+
+  it('handles no space before the parenthesis', () => {
+    assert.strictEqual(rpcDeclAt('  rpc Echo(EchoRequest) returns (EchoResponse);')!.name, 'Echo');
+  });
+
+  it('ignores a comment that mentions rpc', () => {
+    assert.strictEqual(rpcDeclAt('  // rpc ListOrders is the read path'), undefined);
+  });
+
+  it('ignores a service declaration', () => {
+    assert.strictEqual(rpcDeclAt('service OrderService {'), undefined);
+  });
+});
+
+describe('generatedFileNameFor', () => {
+  it('maps a proto path to its grpc stub filename', () => {
+    assert.strictEqual(
+      generatedFileNameFor('/r/protos/order-svc/order_service.proto'),
+      'order_service_grpc.pb.go',
+    );
+  });
+
+  it('works on a bare filename', () => {
+    assert.strictEqual(generatedFileNameFor('order_service.proto'), 'order_service_grpc.pb.go');
+  });
+});
+
+describe('sourceMatches', () => {
+  const PROTO = '/r/protos/order-svc/order_service.proto';
+
+  it('matches the header path against the real file', () => {
+    assert.strictEqual(sourceMatches('order-svc/order_service.proto', PROTO), true);
+  });
+
+  it('rejects a same-named proto from a different package dir', () => {
+    assert.strictEqual(sourceMatches('cart-svc/order_service.proto', PROTO), false);
+  });
+
+  it('is false when the generated file has no source header', () => {
+    assert.strictEqual(sourceMatches(undefined, PROTO), false);
+  });
+
+  it('tolerates windows separators in the path', () => {
+    assert.strictEqual(
+      sourceMatches('order-svc/order_service.proto', 'C:\\r\\protos\\order-svc\\order_service.proto'),
+      true,
+    );
   });
 });
