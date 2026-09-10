@@ -3,8 +3,15 @@
   "displayName": "gorpc-lens",
   "description": "Jump from a Go gRPC client call to the handler that actually runs.",
   "version": "0.1.0",
-  "publisher": "local",
+  "publisher": "lntvan166",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lntvan166/gorpc-lens"
+  },
+  "bugs": {
+    "url": "https://github.com/lntvan166/gorpc-lens/issues"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -12,6 +19,22 @@
     "Programming Languages",
     "Other"
   ],
+  "keywords": [
+    "go",
+    "golang",
+    "grpc",
+    "protobuf",
+    "microservices",
+    "monorepo",
+    "go-to-definition",
+    "navigation",
+    "gopls",
+    "go.work"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e2e",
+    "theme": "dark"
+  },
   "activationEvents": [
     "onLanguage:go"
   ],
@@ -132,5 +155,8 @@
     "esbuild": "^0.20.2",
     "mocha": "^10.4.0",
     "typescript": "^5.4.5"
-  }
+  },
+  "extensionKind": [
+    "workspace"
+  ]
 }

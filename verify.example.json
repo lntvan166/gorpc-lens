@@ -1,0 +1,24 @@
+{
+  "_comment": "Copy to verify.local.json (gitignored) and point it at a real Go monorepo. Paths are relative to `workspace`. Run with: npm run verify:real",
+  "workspace": "/absolute/path/to/your/go/monorepo",
+  "caller": {
+    "file": "order-biz/manager/biz/order.go",
+    "line": "b.orderClient.ListOrders(",
+    "token": "ListOrders("
+  },
+  "handler": {
+    "file": "order-svc/manager/handler/order.go",
+    "line": ") ListOrders(ctx context.Context",
+    "token": "ListOrders("
+  },
+  "generated": {
+    "file": "protos/order-svc/order_service_grpc.pb.go",
+    "serverLine": "ListOrders(context.Context, *ListOrdersRequest)",
+    "token": "ListOrders("
+  },
+  "proto": {
+    "file": "protos/order-svc/order_service.proto",
+    "rpc": "ListOrders"
+  },
+  "expectCallerModules": ["order-biz"]
+}

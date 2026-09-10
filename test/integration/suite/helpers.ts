@@ -51,7 +51,7 @@ export function pathsOf(locs: unknown[]): string[] {
 /** Activate gorpc-lens explicitly, so tests do not depend on whether some
  *  earlier test happened to open a Go file and trigger onLanguage:go. */
 export async function activateExtension(): Promise<void> {
-  const ext = vscode.extensions.getExtension('local.gorpc-lens');
+  const ext = vscode.extensions.getExtension('lntvan166.gorpc-lens');
   assert.ok(ext, 'gorpc-lens extension not found in the test host');
   await ext.activate();
 }

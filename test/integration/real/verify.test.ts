@@ -1,13 +1,34 @@
 import * as assert from 'assert';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-const reference = process.env.GORPC_reference ?? '<monorepo>';
+interface Anchor {
+  file: string;
+  line: string;
+  token: string;
+}
 
-const BIZ = path.join(reference, 'order-biz', 'manager', 'biz', 'order.go');
-const HANDLER = path.join(reference, 'order-svc', 'manager', 'handler', 'order.go');
-const PB = path.join(reference, 'protos', 'order-svc', 'order_service_grpc.pb.go');
-const PROTO = path.join(reference, 'protos', 'order-svc', 'order_service.proto');
+interface GeneratedAnchor {
+  file: string;
+  serverLine: string;
+  token: string;
+}
+
+interface VerifyConfig {
+  workspace: string;
+  caller: Anchor;
+  handler: Anchor;
+  generated: GeneratedAnchor;
+  proto: { file: string; rpc: string };
+  expectCallerModules: string[];
+}
+
+const config: VerifyConfig = JSON.parse(
+  fs.readFileSync(process.env.GORPC_VERIFY_CONFIG!, 'utf8'),
+);
+
+const abs = (rel: string): string => path.resolve(config.workspace, rel);
 
 function pathsOf(locs: unknown[]): string[] {
   return (locs as Array<Record<string, { fsPath?: string }>>)
@@ -15,7 +36,6 @@ function pathsOf(locs: unknown[]): string[] {
     .filter((p): p is string => typeof p === 'string');
 }
 
-/** Position of `token` on the first line containing `needle`. */
 function findPos(doc: vscode.TextDocument, needle: string, token: string): vscode.Position {
   for (let i = 0; i < doc.lineCount; i++) {
     const text = doc.lineAt(i).text;
@@ -23,10 +43,10 @@ function findPos(doc: vscode.TextDocument, needle: string, token: string): vscod
       continue;
     }
     const col = text.indexOf(token);
-    assert.ok(col >= 0, `token ${token} not on the line containing ${needle}`);
+    assert.ok(col >= 0, `token "${token}" not on the line containing "${needle}"`);
     return new vscode.Position(i, col + 1);
   }
-  throw new Error(`no line containing ${needle} in ${doc.uri.fsPath}`);
+  throw new Error(`no line containing "${needle}" in ${doc.uri.fsPath}`);
 }
 
 async function openAt(file: string, needle: string, token: string): Promise<vscode.Position> {
@@ -45,7 +65,7 @@ async function openAt(file: string, needle: string, token: string): Promise<vsco
   return pos;
 }
 
-/** gopls needs to index ~50 modules; poll until it answers. */
+/** A large workspace can take minutes to index; poll rather than assume. */
 async function waitForGopls(uri: vscode.Uri, pos: vscode.Position): Promise<void> {
   const deadline = Date.now() + 600000;
   while (Date.now() < deadline) {
@@ -59,7 +79,7 @@ async function waitForGopls(uri: vscode.Uri, pos: vscode.Position): Promise<void
     }
     await new Promise((r) => setTimeout(r, 2000));
   }
-  throw new Error('gopls never answered');
+  throw new Error('gopls never answered a definition request');
 }
 
 async function waitForActivePathEndingWith(suffix: string, timeoutMs = 30000): Promise<string> {
@@ -78,85 +98,86 @@ async function waitForActivePathEndingWith(suffix: string, timeoutMs = 30000): P
   return seen;
 }
 
-describe('gorpc-lens against the real reference workspace', () => {
+describe('gorpc-lens against a real workspace', () => {
   before(async () => {
-    const ext = vscode.extensions.getExtension('local.gorpc-lens');
-    assert.ok(ext, 'extension not found');
+    const ext = vscode.extensions.getExtension('lntvan166.gorpc-lens');
+    assert.ok(ext, 'gorpc-lens not found in the test host');
     await ext.activate();
 
-    // Warm gopls once, on the file every later check depends on.
-    const doc = await vscode.workspace.openTextDocument(BIZ);
-    const pos = findPos(doc, 'b.orderClient.ListOrders(', 'ListOrders(');
-    await waitForGopls(doc.uri, pos);
+    const doc = await vscode.workspace.openTextDocument(abs(config.caller.file));
+    await waitForGopls(doc.uri, findPos(doc, config.caller.line, config.caller.token));
   });
 
-  it('1. Ctrl+Click on the client call offers both the interface and the handler', async () => {
-    const pos = await openAt(BIZ, 'b.orderClient.ListOrders(', 'ListOrders(');
+  it('1. go-to-definition offers both the generated interface and the handler', async () => {
+    const pos = await openAt(abs(config.caller.file), config.caller.line, config.caller.token);
     const locs = await vscode.commands.executeCommand<unknown[]>(
       'vscode.executeDefinitionProvider',
-      vscode.Uri.file(BIZ),
+      vscode.Uri.file(abs(config.caller.file)),
       pos,
     );
     const paths = pathsOf(locs ?? []);
-    console.log('RESULT definition ->', JSON.stringify(paths, null, 2));
 
-    assert.ok(paths.some((p) => p === PB), `expected the generated interface, got ${paths}`);
-    assert.ok(paths.some((p) => p === HANDLER), `expected the handler, got ${paths}`);
+    assert.ok(
+      paths.includes(abs(config.generated.file)),
+      `expected the generated interface, got:\n${paths.join('\n')}`,
+    );
+    assert.ok(
+      paths.includes(abs(config.handler.file)),
+      `expected the handler, got:\n${paths.join('\n')}`,
+    );
   });
 
-  it('2. Ctrl+Alt+H jumps straight to the handler', async () => {
-    await openAt(BIZ, 'b.orderClient.ListOrders(', 'ListOrders(');
+  it('2. Go to gRPC Handler jumps straight to the handler', async () => {
+    await openAt(abs(config.caller.file), config.caller.line, config.caller.token);
     await vscode.commands.executeCommand('gorpcLens.goToHandler');
 
-    const landed = await waitForActivePathEndingWith(path.join('handler', 'order.go'));
-    const editor = vscode.window.activeTextEditor!;
-    const line = editor.document.lineAt(editor.selection.active.line).text;
-    console.log('RESULT goToHandler ->', landed, '| line:', line.trim());
-
-    assert.strictEqual(landed, HANDLER);
-    assert.ok(line.includes('ListOrders'), `cursor sits on: ${line}`);
+    const landed = await waitForActivePathEndingWith(path.basename(config.handler.file));
+    assert.strictEqual(landed, abs(config.handler.file));
   });
 
-  it('3. Find gRPC Callers lists callers across services', async () => {
-    const pos = await openAt(HANDLER, ') ListOrders(ctx context.Context', 'ListOrders(');
+  it('3. references list callers across modules', async () => {
+    const pos = await openAt(abs(config.handler.file), config.handler.line, config.handler.token);
     const locs = await vscode.commands.executeCommand<unknown[]>(
       'vscode.executeReferenceProvider',
-      vscode.Uri.file(HANDLER),
+      vscode.Uri.file(abs(config.handler.file)),
       pos,
     );
-    const paths = pathsOf(locs ?? []);
-    const services = [
+    const modules = [
       ...new Set(
-        paths
-          .filter((p) => p.startsWith(reference + path.sep))
-          .map((p) => p.slice(reference.length + 1).split(path.sep)[0]),
+        pathsOf(locs ?? [])
+          .filter((p) => p.startsWith(config.workspace + path.sep))
+          .map((p) => p.slice(config.workspace.length + 1).split(path.sep)[0]),
       ),
     ].sort();
-    console.log('RESULT callers ->', paths.length, 'refs across', JSON.stringify(services));
+    console.log(`callers span ${modules.length} modules: ${JSON.stringify(modules)}`);
 
-    for (const expected of ['billing-svc', 'integration-svc', 'mobile-biz']) {
-      assert.ok(services.includes(expected), `expected a caller in ${expected}, saw ${services}`);
+    for (const expected of config.expectCallerModules) {
+      assert.ok(modules.includes(expected), `expected a caller in ${expected}, saw ${modules}`);
     }
   });
 
   it('4. Go to Proto Definition lands on the rpc line', async () => {
-    await openAt(BIZ, 'b.orderClient.ListOrders(', 'ListOrders(');
+    await openAt(abs(config.caller.file), config.caller.line, config.caller.token);
     await vscode.commands.executeCommand('gorpcLens.goToProto');
 
-    const landed = await waitForActivePathEndingWith('order_service.proto');
-    const editor = vscode.window.activeTextEditor!;
-    const lineNo = editor.selection.active.line;
-    const line = editor.document.lineAt(lineNo).text;
-    console.log('RESULT goToProto ->', landed, '| line', lineNo + 1, ':', line.trim());
+    const landed = await waitForActivePathEndingWith(path.basename(config.proto.file));
+    assert.strictEqual(
+      landed,
+      abs(config.proto.file),
+      'landed on the wrong copy of the proto (a nested worktree?)',
+    );
 
-    assert.strictEqual(landed, PROTO);
-    assert.ok(/^\s*rpc\s+ListOrders\s*\(/.test(line), `cursor sits on: ${line}`);
+    const editor = vscode.window.activeTextEditor!;
+    const line = editor.document.lineAt(editor.selection.active.line).text;
+    assert.ok(
+      new RegExp(`^\\s*rpc\\s+${config.proto.rpc}\\s*\\(`).test(line),
+      `cursor sits on: ${line}`,
+    );
   });
 
-  it('5. warm gopls implementation latency', async () => {
-    const doc = await vscode.workspace.openTextDocument(PB);
-    const pos = findPos(doc, 'ListOrders(context.Context, *ListOrdersRequest)', 'ListOrders(');
-    console.log('measuring at', path.basename(PB), 'line', pos.line + 1, 'col', pos.character + 1);
+  it('5. reports warm gopls implementation latency', async () => {
+    const doc = await vscode.workspace.openTextDocument(abs(config.generated.file));
+    const pos = findPos(doc, config.generated.serverLine, config.generated.token);
 
     const samples: number[] = [];
     for (let i = 0; i < 10; i++) {
@@ -165,9 +186,7 @@ describe('gorpc-lens against the real reference workspace', () => {
       samples.push(Date.now() - t0);
     }
     samples.sort((a, b) => a - b);
-    const p50 = samples[5];
-    const p95 = samples[9];
-    console.log('RESULT latency -> samples', JSON.stringify(samples));
-    console.log(`RESULT latency -> p50=${p50}ms p95=${p95}ms min=${samples[0]}ms max=${samples[9]}ms`);
+    console.log(`implementation latency (ms): ${samples.join(' ')}`);
+    console.log(`p50=${samples[5]}ms p95=${samples[9]}ms`);
   });
 });

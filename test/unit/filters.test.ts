@@ -6,10 +6,10 @@ const OPTS = { excludeGlobs: ['**/*.pb.go'], includeTests: false };
 describe('filterByPath', () => {
   it('drops generated files and keeps the real handler', () => {
     const kept = filterByPath(
-      [{ path: '/r/pb/x_grpc.pb.go' }, { path: '/r/mnt/handler/order.go' }],
+      [{ path: '/r/pb/x_grpc.pb.go' }, { path: '/r/svc/handler/order.go' }],
       OPTS,
     );
-    assert.deepStrictEqual(kept.map((k) => k.path), ['/r/mnt/handler/order.go']);
+    assert.deepStrictEqual(kept.map((k) => k.path), ['/r/svc/handler/order.go']);
   });
 
   it('drops test files by default', () => {

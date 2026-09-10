@@ -74,11 +74,11 @@ in-editor latency of an `implementation` query on a 50-module workspace.**
 
 | Decision | Choice | Rationale |
 |---|---|---|
-| Generality | Generic, conventions configurable | Resolution keys off `protoc-gen-go-grpc` output shapes, which are standard everywhere. reference-specific layout is never encoded. |
+| Generality | Generic, conventions configurable | Resolution keys off `protoc-gen-go-grpc` output shapes, which are standard everywhere. repo-specific layout is never encoded. |
 | Engine | Delegate to gopls; no index | Always type-accurate, roughly 400 lines, no watcher or invalidation logic. A ripgrep index is 4x the code for a worse answer. |
 | Navigations in v1 | Call to handler; handler to callers; either side to `.proto` | |
 | Explicitly excluded | Handler to downstream biz | `h.orderBiz.ListOrders` is a concrete struct in the same module; gopls already handles it. |
-| Workspace shape | Single root containing all modules | The `monorepo/` folder is opened whole. `go.work` is inside it. |
+| Workspace shape | Single root containing all modules | The the monorepo root folder is opened whole. `go.work` is inside it. |
 
 Rejected: an own ripgrep/regex index (fragile against multi-line signatures,
 streaming RPCs, embedded `Unimplemented`, import aliases; needs a file watcher
@@ -198,7 +198,7 @@ that exact position, so the duplicate query hits a warm cache. The second — an
 `implementation` query across 50 modules — is the unknown.
 
 **Implementation starts with a measurement task, not code.** Instrument the
-pipeline, run it in the real `monorepo/` workspace, record p50/p95 for warm
+pipeline, run it in the real the monorepo root workspace, record p50/p95 for warm
 implementation queries. Under roughly 500ms p95, approach A is settled and the
 hybrid is never built. If it is seconds, revisit with numbers.
 
@@ -247,7 +247,7 @@ TDD, in this order:
 1. **`pbFile.ts` parser** — pure functions, no VS Code, fast. This is where the
    bugs live. Fixtures: a copy of the real
    `order_service_grpc.pb.go`; a service with streaming RPCs; a service
-   with multi-paragraph doc comments between methods (reference has these, and a
+   with multi-paragraph doc comments between methods (reference-workspace has these, and a
    naive scanner breaks on them); a service with zero methods.
 2. **Result filters** — table-driven over synthetic location lists covering
    generated trampolines, `Unimplemented*` embeds, and test mocks.
@@ -260,7 +260,7 @@ TDD, in this order:
 ## Packaging
 
 TypeScript, esbuild bundle, zero runtime dependencies — everything is the
-VS Code API. `activationEvents: onLanguage:go`. Local `.vsix` install for reference;
+VS Code API. `activationEvents: onLanguage:go`. Local `.vsix` install for a private monorepo;
 Marketplace publishing deferred, and nothing in the design blocks it.
 
 ## Scope boundary for v1

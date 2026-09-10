@@ -4,15 +4,15 @@ Ctrl+Click on a Go gRPC client call lands on the generated interface, not on the
 handler that actually runs. gorpc-lens adds the handler to that list.
 
 ```
-b.orderClient.ListOrders(ctx, ...)   // order-biz
+b.orderClient.ListOrders(ctx, ...)       // order-biz    <- you are here
         |
         |  Ctrl+Click today
         v
-    OrderServiceClient.ListOrders    // protos, generated
+    OrderServiceClient.ListOrders        // protos       <- generated, a dead end
         |
-        |  Ctrl+Click with gorpc-lens - both offered
+        |  Ctrl+Click with gorpc-lens: both are offered
         v
-    (*OrderHandler).ListOrders       // order-svc
+    (*OrderHandler).ListOrders           // order-svc    <- the code that runs
 ```
 
 ## Why gopls cannot do this alone
@@ -72,8 +72,8 @@ extension's speed is gopls's speed. Resolved locations are cached per
 service/method until the next `.go` save, and any query exceeding
 `gorpcLens.timeoutMs` contributes nothing rather than blocking the editor.
 
-Measured in the reference workspace - 50 Go modules under one `go.work`, gopls
-v0.23.0 - with a warm editor, on `OrderServiceServer.ListOrders`:
+Measured on a 50-module Go workspace under a single `go.work`, gopls v0.23.0,
+with a warm editor, on a server interface method:
 
 ```
 implementation query, 10 samples (ms): 3 3 4 4 5 5 6 6 40 70

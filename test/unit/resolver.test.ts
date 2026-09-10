@@ -49,28 +49,28 @@ describe('Resolver.handlersFor', () => {
     const lsp = new FakeLsp(
       [
         { path: '/r/pb/echo_grpc.pb.go', line: 100, character: 5 },
-        { path: '/r/mnt/handler.go', line: 47, character: 30 },
+        { path: '/r/svc/handler.go', line: 47, character: 30 },
       ],
       [],
-      { '/r/mnt/handler.go:47': 'func (h *EchoHandler) Echo(ctx context.Context) error {' },
+      { '/r/svc/handler.go:47': 'func (h *EchoHandler) Echo(ctx context.Context) error {' },
     );
     const r = new Resolver(lsp, () => OPTS, SILENT);
     const out = await r.handlersFor('/r/pb/echo_grpc.pb.go', SERVER_METHOD);
-    assert.deepStrictEqual(out, [{ path: '/r/mnt/handler.go', line: 47, character: 30 }]);
+    assert.deepStrictEqual(out, [{ path: '/r/svc/handler.go', line: 47, character: 30 }]);
   });
 
   it('drops a stub receiver even outside a pb.go file', async () => {
     const lsp = new FakeLsp(
-      [{ path: '/r/mnt/stub.go', line: 5, character: 20 }],
+      [{ path: '/r/svc/stub.go', line: 5, character: 20 }],
       [],
-      { '/r/mnt/stub.go:5': 'func (UnimplementedEchoServiceServer) Echo() {}' },
+      { '/r/svc/stub.go:5': 'func (UnimplementedEchoServiceServer) Echo() {}' },
     );
     const r = new Resolver(lsp, () => OPTS, SILENT);
     assert.deepStrictEqual(await r.handlersFor('/r/pb/echo_grpc.pb.go', SERVER_METHOD), []);
   });
 
   it('serves the second call from cache', async () => {
-    const lsp = new FakeLsp([{ path: '/r/mnt/handler.go', line: 47, character: 30 }]);
+    const lsp = new FakeLsp([{ path: '/r/svc/handler.go', line: 47, character: 30 }]);
     const r = new Resolver(lsp, () => OPTS, SILENT);
     await r.handlersFor('/r/pb/echo_grpc.pb.go', SERVER_METHOD);
     await r.handlersFor('/r/pb/echo_grpc.pb.go', SERVER_METHOD);
@@ -78,7 +78,7 @@ describe('Resolver.handlersFor', () => {
   });
 
   it('re-queries after clearCache', async () => {
-    const lsp = new FakeLsp([{ path: '/r/mnt/handler.go', line: 47, character: 30 }]);
+    const lsp = new FakeLsp([{ path: '/r/svc/handler.go', line: 47, character: 30 }]);
     const r = new Resolver(lsp, () => OPTS, SILENT);
     await r.handlersFor('/r/pb/echo_grpc.pb.go', SERVER_METHOD);
     r.clearCache();
@@ -87,7 +87,7 @@ describe('Resolver.handlersFor', () => {
   });
 
   it('returns nothing on timeout and does not cache the miss', async () => {
-    const lsp = new FakeLsp([{ path: '/r/mnt/handler.go', line: 47, character: 30 }], [], {}, 100);
+    const lsp = new FakeLsp([{ path: '/r/svc/handler.go', line: 47, character: 30 }], [], {}, 100);
     const r = new Resolver(lsp, () => ({ ...OPTS, timeoutMs: 5 }), SILENT);
     assert.deepStrictEqual(await r.handlersFor('/r/pb/echo_grpc.pb.go', SERVER_METHOD), []);
     await r.handlersFor('/r/pb/echo_grpc.pb.go', SERVER_METHOD);

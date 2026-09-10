@@ -82,7 +82,7 @@ describe('Pipeline.siteAt', () => {
   it('does not run the implementation stage for providers', async () => {
     const lsp = new FakeLsp([], [{ path: PB_PATH, line: SERVER_LINE, character: 1 }]);
     const p = new Pipeline(lsp, SILENT);
-    const r = await p.siteAt('/r/mnt/handler.go', { line: 47, character: 30 }, PROVIDER_STAGES);
+    const r = await p.siteAt('/r/svc/handler.go', { line: 47, character: 30 }, PROVIDER_STAGES);
     assert.strictEqual(r, undefined);
     assert.strictEqual(lsp.implementationCalls, 0);
   });
@@ -90,7 +90,7 @@ describe('Pipeline.siteAt', () => {
   it('recognises a handler method when the implementation stage is allowed', async () => {
     const lsp = new FakeLsp([], [{ path: PB_PATH, line: SERVER_LINE, character: 1 }]);
     const p = new Pipeline(lsp, SILENT);
-    const r = await p.siteAt('/r/mnt/handler.go', { line: 47, character: 30 }, COMMAND_STAGES);
+    const r = await p.siteAt('/r/svc/handler.go', { line: 47, character: 30 }, COMMAND_STAGES);
     assert.strictEqual(r?.site.role, 'server');
     assert.strictEqual(r?.site.clientMethod?.line, CLIENT_LINE);
   });
@@ -130,7 +130,7 @@ describe('REFERENCE_STAGES', () => {
   it('resolves a handler position without asking for definitions', async () => {
     const lsp = new FakeLsp([], [{ path: PB_PATH, line: SERVER_LINE, character: 1 }]);
     const p = new Pipeline(lsp, SILENT);
-    const r = await p.siteAt('/r/mnt/handler.go', { line: 47, character: 30 }, REFERENCE_STAGES);
+    const r = await p.siteAt('/r/svc/handler.go', { line: 47, character: 30 }, REFERENCE_STAGES);
     assert.strictEqual(r?.site.role, 'server');
     assert.strictEqual(lsp.definitionCalls, 0);
   });

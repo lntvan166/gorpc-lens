@@ -20,21 +20,22 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type OrderServiceClient interface {
 	ListOrders(ctx context.Context, in *ListOrdersRequest, opts ...grpc.CallOption) (*ListOrdersResponse, error)
-	// Counts orders grouped by shipper_id using ListOrdersRequest filters (paging is ignored).
+	// Counts orders grouped by status using ListOrdersRequest filters (paging is ignored).
 	CountOrdersByStatus(ctx context.Context, in *ListOrdersRequest, opts ...grpc.CallOption) (*CountOrdersByStatusResponse, error)
 }
 
 // OrderServiceServer is the server API for OrderService service.
 type OrderServiceServer interface {
 	ListOrders(context.Context, *ListOrdersRequest) (*ListOrdersResponse, error)
-	// Read path for the back-office order grid.
+	// A deliberately long doc comment, spanning several paragraphs, because a
+	// brace-counting scanner that does not strip comments first will miscount
+	// here and swallow the method below.
 	//
-	// Separate from ListOrders because of one difference callers cannot be
-	// switched over silently: STATUS_ACTIVE is applied in SQL here, so the page,
-	// the total and the ordering all describe ONE row set. ListOrders filters
-	// it in Go after the page is cut, which is why its total counts rows the
-	// page excluded and why a page holding only inactive rows collapses the
-	// whole response.
+	// It also contains prose with braces {like this} and parentheses (like
+	// this), which is exactly the shape that breaks a naive parser.
+	//
+	// Real generated files carry comments like this whenever the .proto has
+	// doc comments on its rpcs, so the parser must survive them.
 	CountOrdersByStatus(context.Context, *ListOrdersRequest) (*CountOrdersByStatusResponse, error)
 	mustEmbedUnimplementedOrderServiceServer()
 }

@@ -8,3 +8,4 @@ dist/
 
 # Written by integration tests that update workspace settings.
 test/fixtures/workspace/.vscode/
+verify.local.json
