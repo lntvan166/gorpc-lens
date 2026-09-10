@@ -169,14 +169,23 @@ ovsx publish gorpc-lens-X.Y.Z.vsix                     # Open VSX (uses OVSX_PAT
 ```
 
 **Both registries index AFTER the CLI reports success — poll, don't panic.**
-Measured on v0.1.0: the Marketplace was live in ~20 s, Open VSX in ~140 s.
+
+**Poll Open VSX on the *versioned* endpoint, not the latest-version one.**
+`/api/lntvan166/gorpc-lens` is aggressively cached and kept showing the previous
+version for over ten minutes after v0.2.0 was live, which looks exactly like a
+failed publish and is not. `/api/lntvan166/gorpc-lens/<version>` returns 200 as
+soon as the version exists.
+
+Measured: v0.1.0 Marketplace ~20 s, Open VSX ~140 s. v0.2.0 Marketplace ~280 s,
+Open VSX immediate (the cached endpoint lied for 10+ minutes).
 
 ```bash
-for i in $(seq 1 15); do
-  o=$(curl -s https://open-vsx.org/api/lntvan166/gorpc-lens | python3 -c "import sys,json;print(json.load(sys.stdin).get('version','-'))" 2>/dev/null || echo "-")
+V=X.Y.Z
+for i in $(seq 1 20); do
+  o=$(curl -s -o /dev/null -w '%{http_code}' https://open-vsx.org/api/lntvan166/gorpc-lens/$V)
   m=$(npx vsce show lntvan166.gorpc-lens 2>/dev/null | grep -m1 "Version:" | awk '{print $2}')
-  echo "t+$((i*20))s  openvsx=${o:--}  marketplace=${m:--}"
-  [ "$o" = "X.Y.Z" ] && [ "$m" = "X.Y.Z" ] && echo "BOTH LIVE" && break
+  echo "t+$((i*20))s  openvsx=$o(200=live)  marketplace=${m:--}"
+  [ "$o" = "200" ] && [ "$m" = "$V" ] && echo "BOTH LIVE" && break
   sleep 20
 done
 ```
