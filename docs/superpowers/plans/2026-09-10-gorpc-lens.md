@@ -1129,6 +1129,13 @@ describe('receiverTypeFromLine', () => {
     assert.strictEqual(receiverTypeFromLine('func (h Handler) Echo() {'), 'Handler');
   });
 
+  it('reads an anonymous receiver, as generated Unimplemented stubs use', () => {
+    assert.strictEqual(
+      receiverTypeFromLine('func (UnimplementedOrderServiceServer) ListOrders() {'),
+      'UnimplementedOrderServiceServer',
+    );
+  });
+
   it('returns undefined for a plain function', () => {
     assert.strictEqual(receiverTypeFromLine('func Echo() {}'), undefined);
   });
@@ -1156,7 +1163,9 @@ export interface FilterOptions {
 }
 
 const STUB_RECEIVER = /^(Unimplemented|Unsafe)/;
-const RECEIVER = /^func\s*\(\s*\w+\s+\*?(\w+)\s*\)/;
+// Both `func (h *T)` and the anonymous `func (T)` that generated
+// Unimplemented stubs use.
+const RECEIVER = /^func\s*\(\s*(?:\w+\s+)?\*?(\w+)\s*\)/;
 
 export function filterByPath<T extends { path: string }>(results: T[], opts: FilterOptions): T[] {
   return results.filter((r) => {

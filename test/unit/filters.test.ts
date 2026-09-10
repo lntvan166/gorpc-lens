@@ -58,6 +58,13 @@ describe('receiverTypeFromLine', () => {
     assert.strictEqual(receiverTypeFromLine('func (h Handler) Echo() {'), 'Handler');
   });
 
+  it('reads an anonymous receiver, as generated Unimplemented stubs use', () => {
+    assert.strictEqual(
+      receiverTypeFromLine('func (UnimplementedOrderServiceServer) ListOrders() {'),
+      'UnimplementedOrderServiceServer',
+    );
+  });
+
   it('returns undefined for a plain function', () => {
     assert.strictEqual(receiverTypeFromLine('func Echo() {}'), undefined);
   });
