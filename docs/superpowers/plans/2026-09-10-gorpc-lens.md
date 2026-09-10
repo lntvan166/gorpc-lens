@@ -2096,13 +2096,19 @@ func (b *Biz) Run(ctx context.Context) error {
 }
 ```
 
-Verify the fixture builds:
+Verify the fixture builds. Note the explicit module paths: `./...` does not
+expand across a `go.work` whose root directory is not itself a module.
 
 ```bash
-cd test/fixtures/workspace && go build ./... && cd -
+cd test/fixtures/workspace \
+  && go build ./pb/... ./handlersvc/... ./callersvc/... \
+  && go vet ./pb/... ./handlersvc/... ./callersvc/... \
+  && cd -
 ```
 
-Expected: no output.
+Expected: no output. A clean `go vet` also confirms the
+`var _ pb.EchoServiceServer = (*EchoHandler)(nil)` assertion holds, which is
+what makes gopls able to find the handler at all.
 
 - [ ] **Step 2: Create the test-electron harness**
 
