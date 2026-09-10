@@ -5,9 +5,16 @@
   "version": "0.1.0",
   "publisher": "local",
   "license": "MIT",
-  "engines": { "vscode": "^1.75.0" },
-  "categories": ["Programming Languages", "Other"],
-  "activationEvents": ["onLanguage:go"],
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:go"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -41,13 +48,20 @@
         },
         "gorpcLens.excludeGlobs": {
           "type": "array",
-          "items": { "type": "string" },
-          "default": ["**/*.pb.go"],
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/*.pb.go"
+          ],
           "description": "Results in files matching these globs are treated as generated code and dropped."
         },
         "gorpcLens.trace": {
           "type": "string",
-          "enum": ["off", "verbose"],
+          "enum": [
+            "off",
+            "verbose"
+          ],
           "default": "off",
           "description": "Log each resolution stage and its timing to the gorpc-lens output channel."
         }
@@ -60,7 +74,7 @@
     "watch": "node esbuild.js --watch",
     "compile-tests": "tsc -p .",
     "test:unit": "npm run compile-tests && mocha",
-    "test:integration": "npm run compile-tests && node out/test/integration/runTest.js",
+    "test:integration": "npm run build && npm run compile-tests && node out/test/integration/runTest.js",
     "package": "vsce package"
   },
   "devDependencies": {

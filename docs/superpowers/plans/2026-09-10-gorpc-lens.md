@@ -141,7 +141,7 @@ The spec makes measuring warm gopls latency the first act of implementation, not
     "watch": "node esbuild.js --watch",
     "compile-tests": "tsc -p .",
     "test:unit": "npm run compile-tests && mocha",
-    "test:integration": "npm run compile-tests && node out/test/integration/runTest.js",
+    "test:integration": "npm run build && npm run compile-tests && node out/test/integration/runTest.js",
     "package": "vsce package"
   },
   "devDependencies": {
@@ -213,6 +213,10 @@ main().catch((e) => {
   process.exit(1);
 });
 ```
+
+`test:integration` runs `build` as well as `compile-tests`: the extension host
+loads the esbuild bundle at `dist/extension.js`, so a run that only ran `tsc`
+would silently test the previous build.
 
 `.mocharc.json`:
 
