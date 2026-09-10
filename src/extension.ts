@@ -6,6 +6,7 @@ import { Pipeline } from './core/pipeline';
 import { Resolver } from './core/resolver';
 import { Deps, GrpcDefinitionProvider } from './vscode/definition';
 import { registerCommands } from './vscode/commands';
+import { GrpcReferenceProvider } from './vscode/reference';
 
 const GO: vscode.DocumentSelector = { language: 'go', scheme: 'file' };
 
@@ -35,6 +36,9 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(GO, new GrpcDefinitionProvider(deps)),
+  );
+  context.subscriptions.push(
+    vscode.languages.registerReferenceProvider(GO, new GrpcReferenceProvider(deps)),
   );
 
   registerCommands(context, deps);

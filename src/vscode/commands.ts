@@ -8,6 +8,9 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Deps): 
   context.subscriptions.push(
     vscode.commands.registerCommand('gorpcLens.goToHandler', () => goToHandler(deps)),
   );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('gorpcLens.findCallers', () => findCallers(deps)),
+  );
 }
 
 export async function goToHandler(deps: Deps): Promise<void> {
@@ -68,5 +71,39 @@ export async function revealOrPeek(
     at,
     targets.map(toVsLocation),
     'peek',
+  );
+}
+
+export async function findCallers(deps: Deps): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document.languageId !== 'go') {
+    vscode.window.showWarningMessage('gorpc-lens: put the cursor on a gRPC method in a Go file.');
+    return;
+  }
+
+  const pos = editor.selection.active;
+  const resolved = await deps.pipeline.siteAt(
+    editor.document.uri.fsPath,
+    { line: pos.line, character: pos.character },
+    COMMAND_STAGES,
+  );
+  if (!resolved || !resolved.site.clientMethod) {
+    vscode.window.showWarningMessage('gorpc-lens: this is not a gRPC client call or handler.');
+    return;
+  }
+
+  const callers = await deps.resolver.callersFor(resolved.pbPath, resolved.site.clientMethod);
+  if (callers.length === 0) {
+    vscode.window.showWarningMessage(
+      `gorpc-lens: no callers found for ${resolved.site.service}/${resolved.site.method}.`,
+    );
+    return;
+  }
+
+  await vscode.commands.executeCommand(
+    'editor.action.showReferences',
+    editor.document.uri,
+    pos,
+    callers.map(toVsLocation),
   );
 }

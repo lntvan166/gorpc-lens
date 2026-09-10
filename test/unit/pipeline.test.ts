@@ -1,5 +1,10 @@
 import * as assert from 'assert';
-import { Pipeline, PROVIDER_STAGES, COMMAND_STAGES } from '../../src/core/pipeline';
+import {
+  Pipeline,
+  PROVIDER_STAGES,
+  COMMAND_STAGES,
+  REFERENCE_STAGES,
+} from '../../src/core/pipeline';
 import { Loc, Logger, LspClient, Pos } from '../../src/core/types';
 
 const SILENT: Logger = { trace: () => undefined, error: () => undefined };
@@ -114,5 +119,19 @@ describe('Pipeline.siteAt', () => {
     p.invalidate();
     await p.siteAt('/r/biz/c.go', { line: 1, character: 1 }, PROVIDER_STAGES);
     assert.strictEqual(reads, 2);
+  });
+});
+
+describe('REFERENCE_STAGES', () => {
+  it('skips the definition stage but keeps implementation', () => {
+    assert.deepStrictEqual(REFERENCE_STAGES, ['self', 'implementation']);
+  });
+
+  it('resolves a handler position without asking for definitions', async () => {
+    const lsp = new FakeLsp([], [{ path: PB_PATH, line: SERVER_LINE, character: 1 }]);
+    const p = new Pipeline(lsp, SILENT);
+    const r = await p.siteAt('/r/mnt/handler.go', { line: 47, character: 30 }, REFERENCE_STAGES);
+    assert.strictEqual(r?.site.role, 'server');
+    assert.strictEqual(lsp.definitionCalls, 0);
   });
 });

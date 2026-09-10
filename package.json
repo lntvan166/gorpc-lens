@@ -25,6 +25,10 @@
       {
         "command": "gorpcLens.goToHandler",
         "title": "gorpc-lens: Go to gRPC Handler"
+      },
+      {
+        "command": "gorpcLens.findCallers",
+        "title": "gorpc-lens: Find gRPC Callers"
       }
     ],
     "keybindings": [
@@ -47,6 +51,10 @@
         {
           "command": "gorpcLens.goToHandler",
           "group": "1_nav@1"
+        },
+        {
+          "command": "gorpcLens.findCallers",
+          "group": "1_nav@2"
         }
       ],
       "commandPalette": [
