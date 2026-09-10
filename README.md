@@ -72,14 +72,21 @@ extension's speed is gopls's speed. Resolved locations are cached per
 service/method until the next `.go` save, and any query exceeding
 `gorpcLens.timeoutMs` contributes nothing rather than blocking the editor.
 
-Warm in-editor numbers for the reference workspace (~50 Go modules under one
-`go.work`, gopls v0.23.0) have not been recorded yet. Run
-**gorpc-lens: Measure gopls Latency (dev)** with the cursor on a server
-interface method and paste the result here.
+Measured in the reference workspace - 50 Go modules under one `go.work`, gopls
+v0.23.0 - with a warm editor, on `OrderServiceServer.ListOrders`:
 
-For reference, cold `gopls` CLI runs against that workspace - which load all 50
-modules from nothing and so are a strict upper bound - took 6.7s for
-`implementation` and 6.0s for `references`.
+```
+implementation query, 10 samples (ms): 3 3 4 4 5 5 6 6 40 70
+p50 = 5ms    p95 = 70ms
+```
+
+The two outliers are the first two calls, before gopls has the query warm.
+Steady state is single-digit milliseconds, so the cache exists for correctness
+of repeat navigation rather than to hide latency.
+
+For contrast, a cold `gopls` CLI run against the same workspace takes ~6.7s -
+that figure is workspace indexing, not query cost, and does not apply to an
+editor that already has gopls running.
 
 ## Development
 

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { COMMAND_STAGES } from '../core/pipeline';
 import { excludeSelf } from '../core/filters';
 import { Loc } from '../core/types';
-import { findRpcLine } from '../core/proto';
+import { findRpcLine, pickNearestProto } from '../core/proto';
 import { Deps, toVsLocation } from './definition';
 
 export function registerCommands(context: vscode.ExtensionContext, deps: Deps): void {
@@ -138,13 +138,17 @@ export async function goToProto(deps: Deps): Promise<void> {
     return;
   }
 
-  const matches = await vscode.workspace.findFiles(`**/${source}`, '**/node_modules/**', 5);
-  if (matches.length === 0) {
+  const matches = await vscode.workspace.findFiles(`**/${source}`, '**/node_modules/**', 50);
+  const nearest = pickNearestProto(
+    matches.map((m) => m.fsPath),
+    resolved.pbPath,
+  );
+  if (!nearest) {
     vscode.window.showWarningMessage(`gorpc-lens: ${source} is not in this workspace.`);
     return;
   }
 
-  const doc = await vscode.workspace.openTextDocument(matches[0]);
+  const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(nearest));
   const line = findRpcLine(doc.getText(), resolved.site.method);
   const at = new vscode.Position(line ?? 0, 0);
   await vscode.window.showTextDocument(doc, { selection: new vscode.Range(at, at) });

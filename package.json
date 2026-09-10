@@ -19,10 +19,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "gorpcLens.measureLatency",
-        "title": "gorpc-lens: Measure gopls Latency (dev)"
-      },
-      {
         "command": "gorpcLens.goToHandler",
         "title": "gorpc-lens: Go to gRPC Handler"
       },
@@ -63,12 +59,6 @@
         {
           "command": "gorpcLens.goToProto",
           "group": "1_nav@3"
-        }
-      ],
-      "commandPalette": [
-        {
-          "command": "gorpcLens.measureLatency",
-          "when": "false"
         }
       ]
     },
@@ -130,7 +120,8 @@
     "compile-tests": "tsc -p .",
     "test:unit": "npm run compile-tests && mocha",
     "test:integration": "npm run build && npm run compile-tests && node out/test/integration/runTest.js",
-    "package": "vsce package"
+    "package": "vsce package",
+    "verify:real": "npm run build && npm run compile-tests && node out/test/integration/runReal.js"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",

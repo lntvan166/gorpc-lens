@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { findRpcLine } from '../../src/core/proto';
+import { findRpcLine, pickNearestProto } from '../../src/core/proto';
 
 const PROTO = [
   'syntax = "proto3";',
@@ -25,5 +25,27 @@ describe('findRpcLine', () => {
 
   it('tolerates no space before the parenthesis', () => {
     assert.strictEqual(findRpcLine('  rpc Echo(EchoRequest) returns (EchoResponse);', 'Echo'), 0);
+  });
+});
+
+describe('pickNearestProto', () => {
+  const PB = '/src/monorepo/protos/order-svc/order_service_grpc.pb.go';
+  const SIBLING = '/src/monorepo/protos/order-svc/order_service.proto';
+  const WORKTREE = '/src/monorepo/ws-feature/protos/order-svc/order_service.proto';
+
+  it('prefers the copy sitting beside the generated file', () => {
+    assert.strictEqual(pickNearestProto([WORKTREE, SIBLING], PB), SIBLING);
+  });
+
+  it('is not fooled by candidate order', () => {
+    assert.strictEqual(pickNearestProto([SIBLING, WORKTREE], PB), SIBLING);
+  });
+
+  it('returns the only candidate when there is one', () => {
+    assert.strictEqual(pickNearestProto([WORKTREE], PB), WORKTREE);
+  });
+
+  it('returns undefined when there are none', () => {
+    assert.strictEqual(pickNearestProto([], PB), undefined);
   });
 });
