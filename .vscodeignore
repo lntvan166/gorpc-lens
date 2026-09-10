@@ -11,3 +11,10 @@ tsconfig.json
 .gitignore
 **/*.map
 **/*.ts
+
+# Dev-only: the real-workspace verification config template
+verify.example.json
+
+# Only media/icon.png is referenced by package.json; nothing else in media ships.
+media/**
+!media/icon.png

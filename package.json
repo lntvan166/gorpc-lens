@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "publisher": "lntvan166",
   "license": "MIT",
+  "icon": "media/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/lntvan166/gorpc-lens"
@@ -141,10 +142,11 @@
     "build": "node esbuild.js --production",
     "watch": "node esbuild.js --watch",
     "compile-tests": "tsc -p .",
+    "test": "npm run test:unit && npm run test:integration",
     "test:unit": "npm run compile-tests && mocha",
     "test:integration": "npm run build && npm run compile-tests && node out/test/integration/runTest.js",
-    "package": "vsce package",
-    "verify:real": "npm run build && npm run compile-tests && node out/test/integration/runReal.js"
+    "verify:real": "npm run build && npm run compile-tests && node out/test/integration/runReal.js",
+    "package": "vsce package"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.6",
