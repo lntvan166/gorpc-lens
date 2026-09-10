@@ -26,3 +26,10 @@ export function filterByReceiver<T extends { receiverType?: string }>(results: T
 export function receiverTypeFromLine(line: string): string | undefined {
   return RECEIVER.exec(line)?.[1];
 }
+
+export function excludeSelf<T extends { path: string; line: number }>(
+  results: T[],
+  current: { path: string; line: number },
+): T[] {
+  return results.filter((r) => !(r.path === current.path && r.line === current.line));
+}

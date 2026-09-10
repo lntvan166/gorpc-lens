@@ -21,6 +21,45 @@
       {
         "command": "gorpcLens.measureLatency",
         "title": "gorpc-lens: Measure gopls Latency (dev)"
+      },
+      {
+        "command": "gorpcLens.goToHandler",
+        "title": "gorpc-lens: Go to gRPC Handler"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "gorpcLens.goToHandler",
+        "key": "ctrl+alt+h",
+        "mac": "cmd+alt+h",
+        "when": "editorTextFocus && editorLangId == go"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "submenu": "gorpcLens.submenu",
+          "group": "navigation@100",
+          "when": "editorLangId == go"
+        }
+      ],
+      "gorpcLens.submenu": [
+        {
+          "command": "gorpcLens.goToHandler",
+          "group": "1_nav@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "gorpcLens.measureLatency",
+          "when": "false"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "gorpcLens.submenu",
+        "label": "gRPC"
       }
     ],
     "configuration": {

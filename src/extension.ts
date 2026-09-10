@@ -5,6 +5,7 @@ import { VsCodeLspClient } from './vscode/lspClient';
 import { Pipeline } from './core/pipeline';
 import { Resolver } from './core/resolver';
 import { Deps, GrpcDefinitionProvider } from './vscode/definition';
+import { registerCommands } from './vscode/commands';
 
 const GO: vscode.DocumentSelector = { language: 'go', scheme: 'file' };
 
@@ -35,6 +36,8 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(
     vscode.languages.registerDefinitionProvider(GO, new GrpcDefinitionProvider(deps)),
   );
+
+  registerCommands(context, deps);
 
   // A saved Go file can move a handler or add a new one; drop both caches.
   context.subscriptions.push(

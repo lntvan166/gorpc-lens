@@ -1,5 +1,10 @@
 import * as assert from 'assert';
-import { filterByPath, filterByReceiver, receiverTypeFromLine } from '../../src/core/filters';
+import {
+  excludeSelf,
+  filterByPath,
+  filterByReceiver,
+  receiverTypeFromLine,
+} from '../../src/core/filters';
 
 const OPTS = { excludeGlobs: ['**/*.pb.go'], includeTests: false };
 
@@ -67,5 +72,32 @@ describe('receiverTypeFromLine', () => {
 
   it('returns undefined for a plain function', () => {
     assert.strictEqual(receiverTypeFromLine('func Echo() {}'), undefined);
+  });
+});
+
+describe('excludeSelf', () => {
+  it('drops the result the cursor is already sitting on', () => {
+    const kept = excludeSelf(
+      [
+        { path: '/r/a.go', line: 47 },
+        { path: '/r/b.go', line: 12 },
+      ],
+      { path: '/r/a.go', line: 47 },
+    );
+    assert.deepStrictEqual(kept, [{ path: '/r/b.go', line: 12 }]);
+  });
+
+  it('ignores the column, since a declaration and a cursor rarely share one', () => {
+    assert.strictEqual(
+      excludeSelf([{ path: '/r/a.go', line: 47 }], { path: '/r/a.go', line: 47 }).length,
+      0,
+    );
+  });
+
+  it('keeps a same-file result on a different line', () => {
+    assert.strictEqual(
+      excludeSelf([{ path: '/r/a.go', line: 9 }], { path: '/r/a.go', line: 47 }).length,
+      1,
+    );
   });
 });

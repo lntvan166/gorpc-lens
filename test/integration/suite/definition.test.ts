@@ -1,13 +1,15 @@
 import * as assert from 'assert';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { pathsOf, positionOfToken, waitForGopls } from './helpers';
+import { activateExtension, pathsOf, positionOfToken, waitForGopls } from './helpers';
 
 function fixture(...parts: string[]): string {
   return path.resolve(__dirname, '..', '..', '..', '..', 'test', 'fixtures', 'workspace', ...parts);
 }
 
 describe('gorpc-lens definition provider', () => {
+  before(async () => activateExtension());
+
   it('offers the cross-module handler for a gRPC client call', async () => {
     const doc = await vscode.workspace.openTextDocument(fixture('callersvc', 'biz.go'));
     await vscode.window.showTextDocument(doc);
