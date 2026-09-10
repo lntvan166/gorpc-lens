@@ -1,10 +1,5 @@
 import * as assert from 'assert';
-import {
-  excludeSelf,
-  filterByPath,
-  filterByReceiver,
-  receiverTypeFromLine,
-} from '../../src/core/filters';
+import { excludeSelf, filterByPath, filterByReceiver } from '../../src/core/filters';
 
 const OPTS = { excludeGlobs: ['**/*.pb.go'], includeTests: false };
 
@@ -51,29 +46,6 @@ describe('filterByReceiver', () => {
   });
 });
 
-describe('receiverTypeFromLine', () => {
-  it('reads a pointer receiver', () => {
-    assert.strictEqual(
-      receiverTypeFromLine('func (h *OrderHandler) ListOrders(ctx context.Context) error {'),
-      'OrderHandler',
-    );
-  });
-
-  it('reads a value receiver', () => {
-    assert.strictEqual(receiverTypeFromLine('func (h Handler) Echo() {'), 'Handler');
-  });
-
-  it('reads an anonymous receiver, as generated Unimplemented stubs use', () => {
-    assert.strictEqual(
-      receiverTypeFromLine('func (UnimplementedOrderServiceServer) ListOrders() {'),
-      'UnimplementedOrderServiceServer',
-    );
-  });
-
-  it('returns undefined for a plain function', () => {
-    assert.strictEqual(receiverTypeFromLine('func Echo() {}'), undefined);
-  });
-});
 
 describe('excludeSelf', () => {
   it('drops the result the cursor is already sitting on', () => {

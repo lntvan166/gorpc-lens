@@ -2,3 +2,9 @@ node_modules/
 out/
 dist/
 *.vsix
+
+# Downloaded VS Code build and its user data, created by test:integration.
+.vscode-test/
+
+# Written by integration tests that update workspace settings.
+test/fixtures/workspace/.vscode/

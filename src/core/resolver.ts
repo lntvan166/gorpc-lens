@@ -1,6 +1,7 @@
 import { Loc, Logger, LspClient, Pos } from './types';
 import { ResolveCache, withTimeout } from './lsp';
-import { FilterOptions, filterByPath, filterByReceiver, receiverTypeFromLine } from './filters';
+import { FilterOptions, filterByPath, filterByReceiver } from './filters';
+import { receiverTypeFromLine } from './goDecl';
 import { MethodRef } from './pbFile';
 
 export type Direction = 'handlers' | 'callers';
