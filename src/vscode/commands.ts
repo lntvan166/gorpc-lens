@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { COMMAND_STAGES } from '../core/pipeline';
 import { excludeSelf } from '../core/filters';
 import { Loc } from '../core/types';
+import { findRpcLine } from '../core/proto';
 import { Deps, toVsLocation } from './definition';
 
 export function registerCommands(context: vscode.ExtensionContext, deps: Deps): void {
@@ -10,6 +11,9 @@ export function registerCommands(context: vscode.ExtensionContext, deps: Deps): 
   );
   context.subscriptions.push(
     vscode.commands.registerCommand('gorpcLens.findCallers', () => findCallers(deps)),
+  );
+  context.subscriptions.push(
+    vscode.commands.registerCommand('gorpcLens.goToProto', () => goToProto(deps)),
   );
 }
 
@@ -106,4 +110,48 @@ export async function findCallers(deps: Deps): Promise<void> {
     pos,
     callers.map(toVsLocation),
   );
+}
+
+export async function goToProto(deps: Deps): Promise<void> {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document.languageId !== 'go') {
+    vscode.window.showWarningMessage('gorpc-lens: put the cursor on a gRPC method in a Go file.');
+    return;
+  }
+
+  const pos = editor.selection.active;
+  const resolved = await deps.pipeline.siteAt(
+    editor.document.uri.fsPath,
+    { line: pos.line, character: pos.character },
+    COMMAND_STAGES,
+  );
+  if (!resolved) {
+    vscode.window.showWarningMessage('gorpc-lens: this is not a gRPC client call or handler.');
+    return;
+  }
+
+  const source = resolved.site.protoSource;
+  if (!source) {
+    vscode.window.showWarningMessage(
+      'gorpc-lens: the generated file has no "// source:" comment to follow.',
+    );
+    return;
+  }
+
+  const matches = await vscode.workspace.findFiles(`**/${source}`, '**/node_modules/**', 5);
+  if (matches.length === 0) {
+    vscode.window.showWarningMessage(`gorpc-lens: ${source} is not in this workspace.`);
+    return;
+  }
+
+  const doc = await vscode.workspace.openTextDocument(matches[0]);
+  const line = findRpcLine(doc.getText(), resolved.site.method);
+  const at = new vscode.Position(line ?? 0, 0);
+  await vscode.window.showTextDocument(doc, { selection: new vscode.Range(at, at) });
+
+  if (line === undefined) {
+    vscode.window.showWarningMessage(
+      `gorpc-lens: opened ${source} but could not find "rpc ${resolved.site.method}".`,
+    );
+  }
 }

@@ -29,6 +29,10 @@
       {
         "command": "gorpcLens.findCallers",
         "title": "gorpc-lens: Find gRPC Callers"
+      },
+      {
+        "command": "gorpcLens.goToProto",
+        "title": "gorpc-lens: Go to Proto Definition"
       }
     ],
     "keybindings": [
@@ -55,6 +59,10 @@
         {
           "command": "gorpcLens.findCallers",
           "group": "1_nav@2"
+        },
+        {
+          "command": "gorpcLens.goToProto",
+          "group": "1_nav@3"
         }
       ],
       "commandPalette": [

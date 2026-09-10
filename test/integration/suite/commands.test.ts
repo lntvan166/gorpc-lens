@@ -54,3 +54,19 @@ describe('gorpcLens.goToHandler', () => {
     assert.ok(landed.endsWith(target), `expected to land in ${target}, landed in ${landed}`);
   });
 });
+
+describe('gorpcLens.goToProto', () => {
+  before(async () => activateExtension());
+
+  it('opens the proto at the rpc line from a client call', async () => {
+    await openAt(['callersvc', 'biz.go'], 'b.echoClient.Echo(', 'Echo(');
+    await vscode.commands.executeCommand('gorpcLens.goToProto');
+
+    const landed = await waitForActivePathEndingWith(path.join('pb', 'echo.proto'));
+    assert.ok(landed.endsWith(path.join('pb', 'echo.proto')), `landed in ${landed}`);
+
+    const editor = vscode.window.activeTextEditor!;
+    const line = editor.document.lineAt(editor.selection.active.line).text;
+    assert.ok(line.includes('rpc Echo'), `expected the rpc line, cursor sits on: ${line}`);
+  });
+});
