@@ -87,8 +87,10 @@ only if measured warm latency proves approach A too slow.
 
 ## Architecture
 
-Six source files across three layers. Exactly one knows anything about Go
-syntax.
+A vscode-free core plus a thin VS Code adapter layer. Exactly one module
+knows anything about Go syntax. The core takes plain paths and positions so it
+is unit-testable outside the extension host; the adapter translates to and from
+the VS Code API.
 
 ### `pbFile.ts`
 
