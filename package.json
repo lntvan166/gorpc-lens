@@ -1,0 +1,76 @@
+{
+  "name": "gorpc-lens",
+  "displayName": "gorpc-lens",
+  "description": "Jump from a Go gRPC client call to the handler that actually runs.",
+  "version": "0.1.0",
+  "publisher": "local",
+  "license": "MIT",
+  "engines": { "vscode": "^1.75.0" },
+  "categories": ["Programming Languages", "Other"],
+  "activationEvents": ["onLanguage:go"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gorpcLens.measureLatency",
+        "title": "gorpc-lens: Measure gopls Latency (dev)"
+      }
+    ],
+    "configuration": {
+      "title": "gorpc-lens",
+      "properties": {
+        "gorpcLens.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable gorpc-lens navigation."
+        },
+        "gorpcLens.timeoutMs": {
+          "type": "number",
+          "default": 2000,
+          "description": "Give up on a gopls query after this many milliseconds and contribute nothing."
+        },
+        "gorpcLens.includeTests": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include results in _test.go files."
+        },
+        "gorpcLens.codeLens.handlers": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a caller-count CodeLens above gRPC handler methods."
+        },
+        "gorpcLens.excludeGlobs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": ["**/*.pb.go"],
+          "description": "Results in files matching these globs are treated as generated code and dropped."
+        },
+        "gorpcLens.trace": {
+          "type": "string",
+          "enum": ["off", "verbose"],
+          "default": "off",
+          "description": "Log each resolution stage and its timing to the gorpc-lens output channel."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "compile-tests": "tsc -p .",
+    "test:unit": "npm run compile-tests && mocha",
+    "test:integration": "npm run compile-tests && node out/test/integration/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.30",
+    "@types/vscode": "^1.75.0",
+    "@vscode/test-electron": "^2.3.9",
+    "@vscode/vsce": "^2.24.0",
+    "esbuild": "^0.20.2",
+    "mocha": "^10.4.0",
+    "typescript": "^5.4.5"
+  }
+}

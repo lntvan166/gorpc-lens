@@ -35,6 +35,7 @@ README.md
 src/extension.ts          activate/deactivate, wiring, disposables
 
 src/core/                 NO vscode imports — pure, unit-tested
+  trace.ts                TraceLevel and formatTrace
   types.ts                Pos, Loc, Logger, LspClient interfaces
   pbFile.ts               parse a generated *_grpc.pb.go into a model
   locator.ts              (model, line, char) -> RpcSite
@@ -66,12 +67,12 @@ The spec makes measuring warm gopls latency the first act of implementation, not
 
 **Files:**
 - Create: `package.json`, `tsconfig.json`, `esbuild.js`, `.gitignore`, `.vscodeignore`, `.mocharc.json`
-- Create: `src/extension.ts`, `src/vscode/log.ts`, `src/vscode/config.ts`
+- Create: `src/extension.ts`, `src/core/trace.ts`, `src/vscode/log.ts`, `src/vscode/config.ts`
 - Test: `test/unit/log.test.ts`
 
 **Interfaces:**
 - Consumes: nothing.
-- Produces: `formatTrace(stage: string, detail: string, ms?: number): string`; `class Logger { trace(stage: string, detail: string, ms?: number): void; error(stage: string, err: unknown): void; show(): void; dispose(): void }`; `readConfig(): GorpcConfig` with fields `enabled: boolean, timeoutMs: number, includeTests: boolean, codeLensHandlers: boolean, excludeGlobs: string[], trace: 'off' | 'verbose'`.
+- Produces: `formatTrace(stage: string, detail: string, ms?: number): string` and `type TraceLevel = 'off' | 'verbose'`, both in `src/core/trace.ts` because they are pure and the unit test must load them without a VS Code host; `class Logger { trace(stage: string, detail: string, ms?: number): void; error(stage: string, err: unknown): void; show(): void; dispose(): void }`; `readConfig(): GorpcConfig` with fields `enabled: boolean, timeoutMs: number, includeTests: boolean, codeLensHandlers: boolean, excludeGlobs: string[], trace: 'off' | 'verbose'`.
 
 - [ ] **Step 1: Create the manifest**
 
@@ -252,7 +253,7 @@ tsconfig.json
 
 ```ts
 import * as assert from 'assert';
-import { formatTrace } from '../../src/vscode/log';
+import { formatTrace } from '../../src/core/trace';
 
 describe('formatTrace', () => {
   it('formats a stage and detail without timing', () => {
@@ -280,17 +281,24 @@ Expected: FAIL — `Cannot find module '../../src/vscode/log'`.
 
 - [ ] **Step 5: Implement the logger**
 
-`src/vscode/log.ts`:
+`src/core/trace.ts` — the pure half, so the unit test can load it:
 
 ```ts
-import * as vscode from 'vscode';
-
 export type TraceLevel = 'off' | 'verbose';
 
 export function formatTrace(stage: string, detail: string, ms?: number): string {
   const suffix = ms === undefined ? '' : ` (${Math.round(ms)}ms)`;
   return `[${stage}] ${detail}${suffix}`;
 }
+```
+
+`src/vscode/log.ts` — the half that needs the extension host:
+
+```ts
+import * as vscode from 'vscode';
+import { TraceLevel, formatTrace } from '../core/trace';
+
+export { TraceLevel, formatTrace };
 
 export class Logger {
   private readonly channel: vscode.OutputChannel;
@@ -336,7 +344,7 @@ Expected: PASS, 3 passing.
 
 ```ts
 import * as vscode from 'vscode';
-import { TraceLevel } from './log';
+import { TraceLevel } from '../core/trace';
 
 export interface GorpcConfig {
   enabled: boolean;
